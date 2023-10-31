@@ -54,16 +54,16 @@ public class GimickBlock : MonoBehaviour
             }
         }
 
-        void OnCollisionEnter2D(Collision2D collision)
-        {
-            // 플레이어와 접촉할 수 있는 범위가 확인되면 낙하트리거 ON
-            if(isDelete)
-            {
-                isFell = true;
-            }
+        //void OnCollisionEnter2D(Collision2D collision)
+        //{
+        //    // 플레이어와 접촉할 수 있는 범위가 확인되면 낙하트리거 ON
+        //    if(isDelete)
+        //    {
+        //        isFell = true;
+        //    }
 
-            // isDelete 값을 true로 바꿔야 오브젝트가 화면에서 사라지니,
-            // 각자 제작하는 게임컨셉에 맞춰 추가
-        }
+        //    // isDelete 값을 true로 바꿔야 오브젝트가 화면에서 사라지니,
+        //    // 각자 제작하는 게임컨셉에 맞춰 추가
+        //}
     }
 }
