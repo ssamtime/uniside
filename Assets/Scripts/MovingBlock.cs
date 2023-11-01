@@ -59,7 +59,7 @@ public class MovingBlock : MonoBehaviour
                     // 이동 값이 양수
                     endX = true;    //X축 방향 이동 종료
                 }
-                if ((perDY >= 0.0f && x <= defPos.y) || (perDY < 0.0f && x >= defPos.y))
+                if ((perDY >= 0.0f && y <= defPos.y) || (perDY < 0.0f && y >= defPos.y))
                 {
                     endY = true;    //Y축 방향 이동 종료
                 }
@@ -71,12 +71,14 @@ public class MovingBlock : MonoBehaviour
                 //정방향 이동 처리
                 // 이동 값이 양수고 이동 위치값이 초기 위치값보다 크거나,
                 // 이동 값이 음수고 이동 위치값이 (초기 위치값+이동거리)보다 작은 경우
-                if ((perDX >= 0.0f && x >= defPos.x+moveX) || (perDX < 0.0f && x <= defPos.x+moveX))
+                if ((perDX >= 0.0f && x >= defPos.x+moveX) 
+                    || (perDX < 0.0f && x <= defPos.x+moveX))
                 {
                     // 이동 값이 양수
                     endX = true;    //X축 방향 이동 종료
                 }
-                if ((perDY >= 0.0f && y >= defPos.y+moveY) || (perDY < 0.0f && y<= defPos.y + moveY))
+                if ((perDY >= 0.0f && y >= defPos.y+moveY) 
+                    || (perDY < 0.0f && y<= defPos.y + moveY))
                 {
                     endY = true;    //Y축 방향 이동 종료
                 }

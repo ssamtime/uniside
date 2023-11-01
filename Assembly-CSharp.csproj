@@ -58,16 +58,18 @@
   <ItemGroup>
     <Compile Include="Assets\Scripts\GameManager.cs" />
     <Compile Include="Assets\Scripts\TimeController.cs" />
+    <Compile Include="Assets\Scripts\CannonController.cs" />
+    <Compile Include="Assets\Scripts\ShellController.cs" />
     <Compile Include="Assets\Scripts\CameraManager.cs" />
     <Compile Include="Assets\Scripts\ChangeScene.cs" />
     <Compile Include="Assets\Scripts\ResultManager.cs" />
     <Compile Include="Assets\Scripts\GimickBlock.cs" />
     <Compile Include="Assets\Scripts\MovingBlock.cs" />
-    <Compile Include="Assets\Scripts\ItemData.cs" />
-    <Compile Include="Assets\Player\PlayerController.cs" />
     <Compile Include="Assets\Scripts\SwitchAction.cs" />
-    <Compile Include="Assets\Scripts\CannonController.cs" />
-    <Compile Include="Assets\Scripts\ShellController.cs" />
+    <Compile Include="Assets\Scripts\ItemData.cs" />
+    <Compile Include="Assets\Scripts\PlayerController.cs" />
+    <Compile Include="Assets\Scripts\EnemyController.cs" />
+    <Compile Include="Assets\Scripts\VirtualPad.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">

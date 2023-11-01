@@ -23,6 +23,10 @@ public class GameManager : MonoBehaviour
     public static int totalScore;   // 총점
     public int stageScore = 0;      // 스테이지 점수
 
+    public AudioClip gameOverSound; // 게임 오버 사운드
+    public AudioClip gameClearSound;// 게임 클리어 사운드
+
+    public GameObject InputUI;      // 플레이어 조작 UI 패널
     // Start is called before the first frame update
     void Start()
     {
@@ -74,13 +78,18 @@ public class GameManager : MonoBehaviour
             totalScore += stageScore;
             stageScore = 0;
             UpdateScore();  // 점수 갱신
-        }
 
-        //// 게임시간 카운트 중지
-        //if(timeCnt!=null)
-        //{
-        //    timeCnt.isTimeOver = true;
-        //}
+            // 사운드 재생
+            AudioSource sound = GetComponent<AudioSource>();
+            if(sound != null)
+            {
+                sound.Stop();   //기존 BGM 정지
+                sound.PlayOneShot(gameClearSound);  
+            }
+
+            // 플레이어 조작
+            InputUI.SetActive(false);   //숨기기
+        }
 
         // 게임오버일 경우
         else if(PlayerController.gameState=="gameover")
@@ -94,7 +103,21 @@ public class GameManager : MonoBehaviour
             mainImage.GetComponent<Image>().sprite = gameOverSpr;
             PlayerController.gameState = "gameend";
 
-            
+            // 게임시간 카운트 중지
+            if (timeCnt != null)
+            {
+                timeCnt.isTimeOver = true;
+            }
+
+            // 사운드 재생
+            AudioSource sound = GetComponent<AudioSource>();
+            if (sound != null)
+            {
+                sound.Stop();   //기존 BGM 정지
+                sound.PlayOneShot(gameOverSound);
+            }
+            // 플레이어 조작
+            InputUI.SetActive(false);   //숨기기
         }
         
         // 게임 플레이 중일 경우
@@ -141,6 +164,14 @@ public class GameManager : MonoBehaviour
     {
         int score = stageScore + totalScore;
         scoreText.GetComponent<Text>().text = score.ToString();
+    }
+
+    // 플레이어 점프 함수
+    public void Jump()
+    {
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        PlayerController playerCnt = player.GetComponent<PlayerController>();
+        playerCnt.Jump();
     }
 }
 
