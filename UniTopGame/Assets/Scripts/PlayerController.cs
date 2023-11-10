@@ -4,9 +4,12 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    // 이동속도
-    public float speed = 3.0f;
     
+    public float speed = 3.0f;  // 이동속도
+
+    public float jump = 9.0f;    // 점프력
+    public LayerMask groundLayer;// 착지 가능한 레이어
+
     // 애니메이션
     public string upAnime = "PlayerUp";
     public string downAnime = "PlayerDown";
@@ -14,205 +17,243 @@ public class PlayerController : MonoBehaviour
     public string rightAnime = "PlayerRight";
     public string deadAnime = "PlayerDead";
 
-    // 현재 애니메이션
-    string nowAnimation = "";
-    // 이전 애니메이션
-    string oldAnimation = "";
+    string nowAnimation = "";       // 현재 애니메이션
+    string oldAnimation = "";       // 이전 애니메이션
 
-    float axisH = 0.0f;                     // 가로 입력 (-1.0 ~ 1.0)
-    float axisV = 0.0f;                     // 세로 입력 (-1.0 ~ 1.0)
+    float axisH = 0.0f;         // 가로 입력 (-1.0 ~ 1.0)
+    float axisV = 0.0f;         // 세로 입력 (-1.0 ~ 1.0)
     public float angleZ = -90.0f; // 회전
 
-    Rigidbody2D rbody;              // RigidBody 2D 컴포넌트
-    bool isMoving = false;          // 이동 중
+    Rigidbody2D rbody;          // RigidBody 2D 컴포넌트
+    bool isMoving = false;      // 이동 중 
+
+    public static int hp = 3;       // 플레이어의 HP
+    public static string gameState; // 게임 상태
+    bool inDamage = false;          // 피격상태
+
 
     // Start is called before the first frame update
     void Start()
     {
-        // 현재 이 스크립트가 등록된 오브젝트의 RigidBody 2D 컴포넌트 정보 가져오기
+        // 햔제 이 스크립트가 등록된 오브젝트의 RigidBody 2D 컴포넌트 정보 가져오기
         rbody = this.GetComponent<Rigidbody2D>();
 
-        // 애니메이터 정보 가져오기
-        animator = GetComponent<Animator>();
-        nowAnime = stopAnime;
-        oldAnime = stopAnime;
+        // (기본)애니메이션 설정
+        oldAnimation = downAnime;
 
-        // 게임 상태 (플레이 중)
+        // 게임 상태 지정
         gameState = "playing";
+
+        // HP 불러오기
+        hp = PlayerPrefs.GetInt("PlayerHP");
     }
 
     // Update is called once per frame
     void Update()
     {
-        // 게임 플레이 중이 아닐 경우에는 처리하지 않도록 한다
-        if (gameState != "playing")
+        // 게임 중이 아니거나 공격받고 있을 경우에는 아무것도 하지 않음
+        if (gameState != "playing" || inDamage)
+        {
             return;
-
-        // 수평 방향 입력
-        if (isMoving == false)
-        {
-            axisH = Input.GetAxisRaw("Horizontal");
         }
 
-        // 캐릭터 방향 조절
-        if (axisH > 0.0f)
+        if(isMoving==false)
         {
-            // 오른쪽 이동
-            Debug.Log("오른쪽 이동");
-            transform.localScale = new Vector2(1, 1);
-        }
-        else if (axisH < 0.0f)
-        {
-            // 왼쪽 이동
-            Debug.Log("왼쪽 이동");
-            transform.localScale = new Vector2(-1, 1); // 좌우 반전
+            axisH = Input.GetAxisRaw("Horizontal"); //좌우
+            axisV = Input.GetAxisRaw("Vertical");   //상하 (-1~1)
         }
 
-        // 캐릭터 점프
-        if (Input.GetButtonDown("Jump"))
+        // 키입력을 통하여 이동 각도 구하기
+        Vector2 fromPt = transform.position;
+        Vector2 toPt = new Vector2(fromPt.x + axisH, fromPt.y + axisV);
+        angleZ = GetAngle(fromPt, toPt);
+
+        // 이동 각도를 바탕으로 방향과 애니메이션을 변경한다
+        if(angleZ >= -45&&angleZ<45)
         {
-            Jump();
+            // 오른쪽
+            nowAnimation = rightAnime;
+        }
+        else if(angleZ>=45&& angleZ<=135)
+        {
+            // 윗쪽
+            nowAnimation = upAnime;
+        }
+        else if(angleZ>=-135&& angleZ<-45)   
+        {
+            // 아랫쪽
+            nowAnimation = downAnime;
+        }
+        else 
+        {
+            // 왼쪽
+            nowAnimation = leftAnime;
+        }
+
+        // 애니메이션 변경
+        if(nowAnimation !=oldAnimation)
+        {
+            oldAnimation = nowAnimation;
+            GetComponent<Animator>().Play(nowAnimation);
         }
     }
 
-    // (유니티 초기 설정 기준) 0.02초마다 호출되며, 1초에 총 50번 호출되는 함수
+    // (초기설정기준) 0.02초마다 호출됨 (1초에 50번)
+    // 물리관련처리는 여기서 해야댐
     void FixedUpdate()
     {
-        // 게임 플레이 중이 아닐 경우에는 처리하지 않도록 한다
-        if (gameState != "playing")
+        // 게임중이 아니면 아무것도 하지 않음
+        if(gameState != "playing")
+        {
             return;
-
-        // 착지 판정 처리
-        onGround = Physics2D.Linecast(transform.position,
-                                                                    transform.position - (transform.up * 0.1f),
-                                                                    groundLayer);
-
-        if (onGround || axisH != 0)
-        {
-            // 캐릭터가 지면에 있거나 X축 입력 값이 0이 아닐 경우 velocity 변경
-            rbody.velocity = new Vector2(axisH * speed, rbody.velocity.y);
-        }
-        if (onGround && goJump)
-        {
-            // 캐릭터가 지면에 있을 때 점프 키를 입력했을 경우
-            Debug.Log("점프!");
-            Vector2 jumpPw = new Vector2(0, jump);                     // 점프를 위한 벡터
-            rbody.AddForce(jumpPw, ForceMode2D.Impulse);    // 순간적인 힘을 가한다
-            goJump = false;                                                                    // 점프 플래그 OFF
         }
 
-        // 애니메이션
-        if (onGround)
+        // 공격받는 도중에 캐릭터를 점멸시킨다
+        if(inDamage)
         {
-            // 지면과 맞닿아있을 때
-            if (axisH == 0)
-                nowAnime = stopAnime;   // 정지
+            // Time.time : 게임 시작부터 현재까지의 경과시간 (초단위)
+            // Sin 함수에 연속적으로 증가하는 값을 대입하면 0~1~0~-1~0... 순으로 변함
+            float value = Mathf.Sin(Time.time * 50);
+            Debug.Log(value);
+            if(value>0)
+            {
+                gameObject.GetComponent<SpriteRenderer>().enabled = true;
+            }
             else
-                nowAnime = moveAnime; // 이동
-        }
-        else
-        {
-            // 공중에 있을 때
-            nowAnime = jumpAnime; // 점프
+            {
+                gameObject.GetComponent<SpriteRenderer>().enabled = false;
+            }
+            return; // 피격중 아무고토못하게함
         }
 
-        if (nowAnime != oldAnime)
-        {
-            oldAnime = nowAnime;
-            animator.Play(nowAnime); // 애니메이션 재생
-        }
+        // 이동 속도를 더하여 캐릭터를 움직여준다
+        rbody.velocity = new Vector2(axisH, axisV) * speed;
     }
 
-    // 점프 트리거 ON
-    public void Jump()
-    {
-        goJump = true;  // 점프 플래그 ON
-        Debug.Log("점프 키를 입력했음!");
-    }
-
-    // 접촉 시작 판정
-    private void OnTriggerEnter2D(Collider2D collision)
-    {
-        if (collision.gameObject.tag == "Goal")
-            Goal(); // 골인
-        else if (collision.gameObject.tag == "Dead")
-            GameOver(); // 게임오버
-        else if (collision.gameObject.tag == "ScoreItem")
-        {
-            // 점수 아이템 정보 가져오기
-            ItemData item = collision.gameObject.GetComponent<ItemData>();
-            // 점수 얻기
-            score = item.value;
-            // 아이템 제거
-            Destroy(collision.gameObject);
-        }
-    }
-
-    // 골 지점에 도착했을 때의 애니메이션 재생
-    public void Goal()
-    {
-        animator.Play(goalAnime);
-        gameState = "gameclear";
-        GameStop(); // 게임 중지
-    }
-
-    // 게임 오버일 때의 애니메이션 재생
-    public void GameOver()
-    {
-        animator.Play(deadAnime);
-
-        // 게임 오버 처리
-        gameState = "gameover";
-        GameStop();
-
-        // 게임 오버 연출
-        // 플레이어의 충돌 판정을 비활성화
-        GetComponent<CapsuleCollider2D>().enabled = false;
-        // 플레이어를 살짝 위로 띄워준다
-        rbody.AddForce(new Vector2(0, 5), ForceMode2D.Impulse);
-    }
-
-    // 게임 정지
-    void GameStop()
-    {
-        // rigidBody2D 정보 가져오기
-        Rigidbody2D rbody = GetComponent<Rigidbody2D>();
-        // 속도를 0으로 하여 강제로 멈추게 한다
-        rbody.velocity = new Vector2(0, 0);
-    }
-
-    // 터치스크린(가상 패드)에서 사용할 함수
-    public void SetAxis(float h, float v)
+    // 터치스크린(가상패드)에서 사용할 함수
+    public void SetAxis(float h,float v)
     {
         axisH = h;
-        if (axisH == 0)
+        axisV = v;
+        if (axisH == 0 && axisV ==0)
             isMoving = false;
         else
             isMoving = true;
     }
+
+    // p1에서 p2까지의 각도를 계산한다
+    float GetAngle(Vector2 p1,Vector2 p2)
+    {
+        float angle;
+
+        // 축 방향에 관계없이 캐릭터가 움직이고 있을 경우
+        if(axisH!=0 || axisV!=0)
+        {
+            // p1과 p2의 차를 구하기 (원점을 0으로 하기 위해)
+            float dx = p2.x - p1.x;
+            float dy = p2.y - p1.y;
+
+            // 아크탄젠트 함수로 각도(라디안) 구하기
+            float rad = Mathf.Atan2(dy, dx);
+
+            // 라디안에서 각도로 변환
+            angle = rad * Mathf.Rad2Deg;
+        }
+        else
+        {
+            // 캐릭터가 정지 중이면 각도 유지
+            angle = angleZ;
+        }
+        return angle;
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        // Enemy와 물리적으로 충돌 발생
+        if(collision.gameObject.tag == "Enemy")
+        {
+            // 데미지 계산
+            GetDamage(collision.gameObject);
+        }
+    }
+
+    void GetDamage(GameObject enemy)
+    {
+        if(gameState == "playing")
+        {
+            hp--;   //HP감소
+            PlayerPrefs.SetInt("PlayerHP", hp); //현재 HP 저장
+
+            if(hp>0)
+            {
+                // 이동 중지
+                rbody.velocity = new Vector2(0, 0);
+                // 히트백 (적이 공격한 방향의 반대로)
+                Vector3 toPos = (transform.position - enemy.transform.position).normalized;
+                rbody.AddForce(new Vector2(toPos.x * 4, toPos.y * 4), ForceMode2D.Impulse);
+                // 현재 공격받고 있음
+                inDamage = true;
+                Invoke("DamageEnd", 0.25f);
+            }
+            else
+            {
+                // 체력이 없으면 게임오버
+                GameOver();
+            }
+        }
+    }
+
+    // 데미지 처리 종료
+    void DamageEnd()
+    {
+        inDamage = false;
+        gameObject.GetComponent<SpriteRenderer>().enabled = true;
+    }
+
+    // 게임오버 처리
+    void GameOver()
+    {
+        Debug.Log("게임오버!");
+        gameState = "gameover";
+
+        // 게임오버 연출
+        // 충돌 판정 비활성화
+        GetComponent<CircleCollider2D>().enabled = false;
+        // 이동 중지
+        rbody.velocity = new Vector2(0, 0);
+        // 중력을 통해 플레이어를 위로 살짝 띄우기
+        rbody.gravityScale = 1;
+        rbody.AddForce(new Vector2(0, 5), ForceMode2D.Impulse);
+        // 애니메이션 변경
+        GetComponent<Animator>().Play(deadAnime);
+        // 1초후 캐릭터 삭제
+        Destroy(gameObject, 1.0f);
+
+        // BGM 정지 후 게임 오버 SE 출력
+        SoundManager.soundManager.StopBGM();
+        SoundManager.soundManager.SEPlay(SEType.GameOver);
+    }
 }
 
-// 키 입력 관련 함수 목록
-/*
-    // 키보드의 특정 키 입력에 대한 검사
-    bool down = Input.GetKeyDown(KeyCode.Space);
-    bool press = Input.GetKey(KeyCode.Space);
-    bool up = Input.GetKeyUp(KeyCode.Space);
 
-    // 마우스 버튼 입력 및 터치 이벤트에 대한 검사
-    // 0 : 마우스 왼쪽 버튼
-    // 1 : 마우스 오른쪽 버튼
-    // 2 : 마우스 휠 버튼
-    bool down = Input.GetMouseButtonDown(0);
-    bool press = Input.GetMouseButton(0);
-    bool up = Input.GetMouseButtonUp(0);
+// 키 입력 함수 목록
+/*        
+bool down = Input.GetKeyDown(KeyCode.Space);
+bool press = Input.GetKey(KeyCode.Space);
+bool up = Input.GetKeyUp(KeyCode.Space);
 
-    // Input Manager에서 설정한 문자열을 기반으로 하는 키 입력 검사
-    bool down = Input.GetButtonDown("Jump");
-    bool press = Input.GetButton("Jump");
-    bool up = Input.GetButtonUp("Jump");
+// 마우스 버튼 및 터치 이벤트 검사
+// 0: 왼쪽 1: 오른쪽 2: 휠버튼
+bool down = Input.GetMouseButtonDown(0);
+bool press = Input.GetMouseButton(0);
+bool up = Input.GetMouseButtonUp(0);
 
-    // 가상의 축에 대한 키 입력 검사
-    float axisH = Input.GetAxis("Horizontal");
-    float axisV = Input.GetAxisRaw("Vertical");
+// Input Manager에서 설정한 문자열을 기반으로 하는 키 입력 검사
+bool down = Input.GetButtonDown("Jump");
+bool press = Input.GetButton("Jump");
+bool up = Input.GetButtonUp("Jump");
+
+// 가상의 축에 대한 키 입력
+float axisH = Input.GetAxis("Horizontal");  // -1 ~ 1
+float axisV = Input.GetAxisRaw("Vertical"); // -1, 0, 1
 */
